@@ -1,0 +1,91 @@
+/*
+   Fundacion Kinal
+   Centro educativo tecnico laboral Kinal
+   Quinto perito
+   Quinto electronica
+   Codigo Tecnico: EB5AM / EB5AV
+   Curso: Taller de electronica digital y reparacion de computadoras I
+   Proyecto: Uso del motor paso a paso.
+   Dev: Profe. Alejandro Lopez Navas
+   Fecha: 21 de junio.
+   link de la simulacion:
+*/
+#define sensor_hall 2
+#define sensor_IR 3
+#define IN1  9
+#define IN2  10
+#define IN3  11
+#define IN4  12
+#include <Wire.h>    
+#include <LiquidCrystal_I2C.h>  
+#define direccion_lcd 0x20
+#define filas 2
+#define columnas 16
+#define canal_pot A0
+
+unsigned int valor_adc_pot;
+unsigned int velocidad_motor;
+volatile int contador = 0;
+unsigned long tiempo_actual = 0;
+unsigned long ultimo_tiempo = 0;
+
+LiquidCrystal_I2C lcdSazo(direccion_lcd, columnas, filas);
+
+//Variables
+bool state_sensor;   //variable donde guardo el estado logico del sensor de efecto hall
+// Secuencia de pasos (par máximo)
+int paso [8][4] =
+{
+  {1, 0, 0, 0},
+  {1, 1, 0, 0},
+  {0, 1, 0, 0},
+  {0, 1, 1, 0},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 0, 0, 1},
+  {1, 0, 0, 1}
+};
+ 
+void setup()
+{
+ 
+  Serial.begin(9600);  //Inicio la comunicación serial
+  pinMode(canal_pot, INPUT);
+  pinMode(sensor_IR, INPUT);
+  pinMode(sensor_hall, INPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  //Configuraciones de la LCD
+  lcdSazo.init(); 
+  lcdSazo.backlight(); 
+  lcdSazo.print("Contar Revoluciones");
+  lcdSazo.setCursor(0, 1);
+  lcdSazo.print("No De Rev");  
+
+ }
+void loop() {
+  sensor();
+}
+
+void moverMotor() {
+  valor_adc_pot = analogRead(canal_pot);
+  velocidad_motor = map(valor_adc_pot, 0, 1023, 1, 3);
+
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(IN1, paso[i][0]);
+    digitalWrite(IN2, paso[i][1]);
+    digitalWrite(IN3, paso[i][2]);
+    digitalWrite(IN4, paso[i][3]);
+    delay(velocidad_motor);
+  }
+}
+
+void sensor() {
+  state_sensor = digitalRead(state_sensor);
+  if (state_sensor == LOW) {
+    moverMotor();
+  }
+}
